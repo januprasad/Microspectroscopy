@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">Scientific Calculator</string>
     <string name="title_activity_app">AppActivity</string>
+    <string name="eqn_label">Please type/paste a string to evaluate</string>
+    <string name="eqn_place_holder">Something like PI*r^2</string>
+    <string name="var_hint">Please input value for </string>
+    <string name="btn_label">Evaluate Equation</string>
+    <string name="clear">Clear</string>
 </resources>

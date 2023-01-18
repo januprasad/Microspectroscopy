@@ -15,7 +15,7 @@ class MainViewModel : ViewModel() {
             element.hint == variable
         }
         if (position == -1) {
-            _itemsState.add(TextBox(hint = variable, content = TextFieldValue(""), isTextBoxVisible = true))
+            _itemsState.add(TextBox(hint = variable, content = TextFieldValue("")))
         }
     }
 
@@ -28,11 +28,11 @@ class MainViewModel : ViewModel() {
             is UiEvent.Evaluate -> {
                 evaluate(
                     event.expression,
-                    map = itemsState.map {
+                    map = itemsState.associate {
                         if (it.content.text.isNotBlank()) {
                             it.hint[0] to it.content.text.toDouble()
                         } else it.hint[0] to 0.toDouble()
-                    }.toMap()
+                    }
                 ) {
                     resultState.value = it
                 }
@@ -46,7 +46,7 @@ class MainViewModel : ViewModel() {
         }
         _itemsState[position] = itemsState[position].copy(
             hint = item.hint,
-            content = item.content,
+            content = item.content
         )
     }
 
@@ -76,6 +76,5 @@ sealed class UiEvent {
 
 data class TextBox(
     val content: TextFieldValue,
-    val hint: String,
-    val isTextBoxVisible: Boolean,
+    val hint: String
 )
