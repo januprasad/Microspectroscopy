@@ -28,6 +28,12 @@ fun extractVariables(string: String): CharArray {
         .toCharArray()
 }
 
+fun extractNumbers(string: String): CharArray {
+    return clearPredefined(string)
+        .replace("[^0-9]+".toRegex(), "")
+        .toCharArray()
+}
+
 fun clearPredefined(string: String): String {
     var result = string
     for (element in predefined) {

@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -37,13 +38,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.microspectroscopy.ui.theme.MicrospectroscopyTheme
 
 const val TAG = "S.C_Calculator"
 
-class AppActivity : ComponentActivity() {
-
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -53,55 +54,41 @@ class AppActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    val viewModel: MainViewModel = viewModel()
-                    App(viewModel)
+                    val viewModel: MainVM = viewModel()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        View(viewModel.textBoxPropsState.value, viewModel.resultState.value ,update = {
+                            viewModel.eventsHandler(it)
+                        })
+                    }
                 }
             }
         }
     }
 }
 
-@Composable
-fun App(viewModel: MainViewModel) {
-    var isTextBoxVisible by remember { mutableStateOf(false) }
+private fun isUsernameValid(username: String): Boolean {
+    return username.isNotBlank()
+}
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        EquationComponent(
-            variablePool = viewModel.itemsState,
-            result = viewModel.resultState.value,
-            clearVariables = viewModel::clearVariables,
-            triggerVariables = {
-                viewModel.trigger(it)
-            },
-            onVariableValuePassThrough = {
-                viewModel.onEvents(it)
-            },
-            onEvaluate = {
-                viewModel.onEvents(it)
-            }
-//            onClearEverything = {
-//                viewModel.onEvents(it)
-//            }
-        )
-    }
+private fun isNumber(username: String): Boolean {
+    return isUsernameValid(username) && username.isDigitsOnly()
 }
 
 @Composable
-fun EquationComponent(
-    variablePool: List<TextBox>,
-    result: String,
-    clearVariables: () -> Unit,
-    triggerVariables: (String) -> Unit,
-    onVariableValuePassThrough: (UiEvent.PassThrough) -> Unit,
-    onEvaluate: (UiEvent.Evaluate) -> Unit
-//    onClearEverything: (UiEvent.Clear) -> Unit,
-) {
+fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> Unit) {
     var equation by remember { mutableStateOf(TextFieldValue("")) }
-
+    var variableValues = remember {
+        mutableStateListOf(
+            Variable(
+                name = "",
+                value = TextFieldValue()
+            )
+        )
+    }
     val isValidNumber by remember {
         derivedStateOf {
             equation.text.isNotBlank() && equation.text.last().toString().onlyNumbers()
@@ -119,35 +106,93 @@ fun EquationComponent(
         }
     }
 
-    LaunchedEffect(key1 = variableNames.size) {
-        if (variableNames.isEmpty()) {
-            clearVariables()
+    val numbers by remember {
+        derivedStateOf {
+            extractNumbers(equation.text).distinct()
         }
     }
 
-    EquationTextBox(
+    val variableNameSize by remember {
+        derivedStateOf {
+            extractVariables(equation.text).distinct().size
+        }
+    }
+    LaunchedEffect(key1 = equation.text) {
+        Log.w(TAG, "isValidNumber $isValidNumber")
+        Log.w(TAG, "isValidEquation $isValidEquation")
+        Log.w(TAG, "variableNames $variableNames")
+        Log.w(TAG, "numbers $numbers")
+        Log.w(TAG, "variableNameSize $variableNameSize")
+        Log.w(TAG, "content ${equation.text}")
+        Log.w(TAG, "content Length ${equation.text.length}")
+        Log.w(TAG, "variableValues ${variableValues.size}")
+        variableValues.clear()
+        if (isValidEquation || equation.text.isEmpty()) {
+            variableNames.forEachIndexed { index, item ->
+                val variable = Variable(
+                    name = item.toString(),
+                    value = TextFieldValue("")
+                )
+                variableValues.add(variable)
+            }
+            Log.w(TAG, "variableValues after extraction ${variableValues.size}")
+        }
+    }
+    EquationTextField(
         equation,
-        updateEquation = { equation = it }
+        updateEquation = {
+            equation = it
+        }
     )
-
-    VariablesComponent(
+    if (isValidEquation) {
+        Column {
+            variableValues.forEachIndexed { index, item ->
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = variableValues[index].value,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    label = {
+                        Text(
+                            text = buildString {
+                                append(stringResource(R.string.var_hint).plus(" "))
+                                append(variableValues[index].name)
+                            }
+                        )
+                    },
+                    onValueChange = {
+                        variableValues[index] = variableValues[index].copy(
+                            value = it
+                        )
+                    }
+                )
+            }
+        }
+    }
+    EvaluateButton(
         isValidEquation,
-        variableNames,
-        variablePool,
-        triggerVariables = { triggerVariables(variableNames.last().toString()) },
-        onVariableValuePassThrough = onVariableValuePassThrough
-    )
-    ButtonComponent(isValidEquation, isValidNumber, result, onEvaluate = {
-        onEvaluate(
-            UiEvent.Evaluate(
-                expression = equation.text
+        isValidNumber,
+        result,
+        {
+            val variables: MutableMap<Char, Double> = variableValues.associate {
+                if (it.name.isNotBlank() && it.value.text.isNotBlank()) {
+                    it.name[0] to it.value.text.toDouble()
+                } else it.name[0] to 0.toDouble()
+            } as MutableMap<Char, Double>
+            update(
+                AppEvent.Evaluate(
+                    expression = equation.text,
+                    variables = variables
+                )
             )
-        )
-    }, onClearVars = clearVariables)
+        },
+        {
+            equation = TextFieldValue("")
+        }
+    )
 }
 
 @Composable
-fun EquationTextBox(equation: TextFieldValue, updateEquation: (TextFieldValue) -> Unit) {
+fun EquationTextField(equation: TextFieldValue, updateEquation: (TextFieldValue) -> Unit) {
     TextField(
         modifier = Modifier
             .fillMaxWidth()
@@ -164,7 +209,7 @@ fun EquationTextBox(equation: TextFieldValue, updateEquation: (TextFieldValue) -
 }
 
 @Composable
-fun ButtonComponent(
+fun EvaluateButton(
     isValidEquation: Boolean,
     isValidNumber: Boolean,
     result: String,
@@ -181,10 +226,13 @@ fun ButtonComponent(
         if (isButtonVisible) {
             isButtonVisible = false
         }
-        onClearVars()
+//        onClearVars()
     }
 
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
         Button(
             enabled = isValidEquation,
             onClick = {
@@ -198,6 +246,7 @@ fun ButtonComponent(
         }
         Button(
             onClick = {
+                onClearVars()
             }
         ) {
             Text(stringResource(R.string.clear))
@@ -213,54 +262,5 @@ fun ButtonComponent(
             fontSize = 30.sp,
             fontFamily = FontFamily.Serif
         )
-    }
-}
-
-@Composable
-fun VariablesComponent(
-    isValidEquation: Boolean,
-    variableNames: List<Char>,
-    variablePool: List<TextBox>,
-    triggerVariables: () -> Unit,
-    onVariableValuePassThrough: (UiEvent.PassThrough) -> Unit
-//    forceClearVariablePool: () -> Unit
-) {
-    if (isValidEquation) {
-        if (variableNames.isNotEmpty()) {
-            triggerVariables()
-            if (variableNames.size == variablePool.size) {
-                Column {
-                    variableNames.forEachIndexed { index, item ->
-                        Log.v(TAG, "Recomposing...")
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = variablePool[index].content,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            label = {
-                                Text(
-                                    text = buildString {
-                                        append(stringResource(R.string.var_hint).plus(" "))
-                                        append(variablePool[index].hint)
-                                    }
-                                )
-                            },
-                            onValueChange = {
-                                onVariableValuePassThrough(
-                                    UiEvent.PassThrough(
-                                        TextBox(
-                                            hint = item.toString(),
-                                            content = it
-                                        )
-                                    )
-                                )
-                            }
-                        )
-                    }
-                }
-            } else {
-                Log.v(TAG, "forceClearVariablePool")
-//                forceClearVariablePool()
-            }
-        }
     }
 }
