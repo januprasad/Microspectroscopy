@@ -3,6 +3,7 @@ package com.github.microspectroscopy
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.toLowerCase
 import androidx.lifecycle.ViewModel
 import com.nishant.complexcalculator.ComplexCalculator
 
@@ -20,11 +21,12 @@ class MainVM : ViewModel() {
                     content = newTextBox.content
                 )
             }
+
             is AppEvent.Validate -> {
                 validate(event.expression) {
-
                 }
             }
+
             is AppEvent.Evaluate -> {
                 evaluate(
                     event.expression,
@@ -39,10 +41,9 @@ class MainVM : ViewModel() {
 
     private fun validate(expression: String, function: () -> Unit) {
         val tokens =
-            expression.replace("\\s+".toRegex(), "").split("(?<=[-+*/()])|(?=[-+*/()])".toRegex())
+            expression.replace("\\s+".toRegex(), "").toLowerCase().split("(?<=[-+*/()])|(?=[-+*/()])".toRegex())
                 .dropLastWhile { it.isEmpty() }
                 .toTypedArray()
-
     }
 
     val textBoxPropsState = mutableStateOf(
@@ -57,16 +58,16 @@ class MainVM : ViewModel() {
     )
 
     private fun evaluate(text: String, map: Map<Char, Double>? = null, result: (String) -> Unit) {
-        val calc = ComplexCalculator.fromString(text)
+        val calc = ComplexCalculator.fromString(text.toLowerCase())
         try {
-            if (map != null) {
+            if (!map.isNullOrEmpty()) {
                 result(calc.compute(map).toString())
             } else {
                 result(calc.compute().toString())
             }
         } catch (ex1: ArithmeticException) {
             result(ex1.localizedMessage)
-        } catch (ex2: IllegalArgumentException){
+        } catch (ex2: IllegalArgumentException) {
             result(ex2.localizedMessage)
         }
     }
@@ -88,6 +89,8 @@ data class TextBoxProps(
 
 sealed class AppEvent {
     data class NewTextBox(val newTextBox: TextBoxProps) : AppEvent()
-    data class Evaluate(val expression: String, val variables: MutableMap<Char, Double>) : AppEvent()
+    data class Evaluate(val expression: String, val variables: MutableMap<Char, Double>) :
+        AppEvent()
+
     data class Validate(val expression: String) : AppEvent()
 }

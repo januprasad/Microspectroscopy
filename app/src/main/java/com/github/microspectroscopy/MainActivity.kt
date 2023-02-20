@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
@@ -55,7 +56,7 @@ class MainActivity : ComponentActivity() {
                     val viewModel: MainVM = viewModel()
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxWidth().padding(16.dp)
                     ) {
                         View(
                             viewModel.textBoxPropsState.value,
@@ -70,15 +71,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
-data class FileMessage(val id: Int) {
-    fun toChatExtraDTO(): ChatExtra {
-        return ChatExtra(null)
-    }
-}
-
-data class ChatExtra(val size: Int? = 0, val caption: String? = null)
-
 @Composable
 fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> Unit) {
     var equation by remember { mutableStateOf(TextFieldValue("")) }
@@ -196,27 +188,6 @@ fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> 
         }
     )
 }
-
-// @Composable
-// fun EquationTextComponent(updateEquation: (String) -> Unit) {
-//    var equation by remember { mutableStateOf("") }
-//    TextField(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .height(120.dp),
-//        value = equation,
-//        singleLine = true,
-//        onValueChange = {
-//            equation = it
-//            updateEquation(it)
-//        },
-//        textStyle = TextStyle(
-//            fontSize = 30.sp
-//        ),
-//        label = { Text(text = stringResource(R.string.eqn_label)) },
-//        placeholder = { Text(text = stringResource(R.string.eqn_place_holder)) }
-//    )
-// }
 
 @Composable
 fun EquationTextField(equation: TextFieldValue, updateEquation: (TextFieldValue) -> Unit) {
