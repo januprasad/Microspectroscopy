@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
@@ -38,7 +37,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.microspectroscopy.ui.theme.MicrospectroscopyTheme
 
@@ -58,11 +56,14 @@ class MainActivity : ComponentActivity() {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
                     ) {
-                        View(viewModel.textBoxPropsState.value, viewModel.resultState.value ,update = {
-                            viewModel.eventsHandler(it)
-                        })
+                        View(
+                            viewModel.textBoxPropsState.value,
+                            viewModel.resultState.value,
+                            update = {
+                                viewModel.eventsHandler(it)
+                            }
+                        )
                     }
                 }
             }
@@ -70,13 +71,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private fun isUsernameValid(username: String): Boolean {
-    return username.isNotBlank()
+data class FileMessage(val id: Int) {
+    fun toChatExtraDTO(): ChatExtra {
+        return ChatExtra(null)
+    }
 }
 
-private fun isNumber(username: String): Boolean {
-    return isUsernameValid(username) && username.isDigitsOnly()
-}
+data class ChatExtra(val size: Int? = 0, val caption: String? = null)
 
 @Composable
 fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> Unit) {
@@ -118,14 +119,14 @@ fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> 
         }
     }
     LaunchedEffect(key1 = equation.text) {
-        Log.w(TAG, "isValidNumber $isValidNumber")
-        Log.w(TAG, "isValidEquation $isValidEquation")
-        Log.w(TAG, "variableNames $variableNames")
-        Log.w(TAG, "numbers $numbers")
-        Log.w(TAG, "variableNameSize $variableNameSize")
-        Log.w(TAG, "content ${equation.text}")
-        Log.w(TAG, "content Length ${equation.text.length}")
-        Log.w(TAG, "variableValues ${variableValues.size}")
+//        Log.w(TAG, "isValidNumber $isValidNumber")
+//        Log.w(TAG, "isValidEquation $isValidEquation")
+//        Log.w(TAG, "variableNames $variableNames")
+//        Log.w(TAG, "numbers $numbers")
+//        Log.w(TAG, "variableNameSize $variableNameSize")
+//        Log.w(TAG, "content ${equation.text}")
+//        Log.w(TAG, "content Length ${equation.text.length}")
+//        Log.w(TAG, "variableValues ${variableValues.size}")
         variableValues.clear()
         if (isValidEquation || equation.text.isEmpty()) {
             variableNames.forEachIndexed { index, item ->
@@ -174,9 +175,14 @@ fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> 
         result,
         {
             val variables: MutableMap<Char, Double> = variableValues.associate {
-                if (it.name.isNotBlank() && it.value.text.isNotBlank()) {
-                    it.name[0] to it.value.text.toDouble()
-                } else it.name[0] to 0.toDouble()
+                try {
+                    if (it.name.isNotBlank() && it.value.text.isNotBlank()) {
+                        it.name[0] to it.value.text.toDouble()
+                    } else it.name[0] to 0.toDouble()
+                } catch (ex: NumberFormatException) {
+                    ex.printStackTrace()
+                    it.name[0] to 0.toDouble()
+                }
             } as MutableMap<Char, Double>
             update(
                 AppEvent.Evaluate(
@@ -190,6 +196,27 @@ fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> 
         }
     )
 }
+
+// @Composable
+// fun EquationTextComponent(updateEquation: (String) -> Unit) {
+//    var equation by remember { mutableStateOf("") }
+//    TextField(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .height(120.dp),
+//        value = equation,
+//        singleLine = true,
+//        onValueChange = {
+//            equation = it
+//            updateEquation(it)
+//        },
+//        textStyle = TextStyle(
+//            fontSize = 30.sp
+//        ),
+//        label = { Text(text = stringResource(R.string.eqn_label)) },
+//        placeholder = { Text(text = stringResource(R.string.eqn_place_holder)) }
+//    )
+// }
 
 @Composable
 fun EquationTextField(equation: TextFieldValue, updateEquation: (TextFieldValue) -> Unit) {
@@ -226,7 +253,6 @@ fun EvaluateButton(
         if (isButtonVisible) {
             isButtonVisible = false
         }
-//        onClearVars()
     }
 
     Row(

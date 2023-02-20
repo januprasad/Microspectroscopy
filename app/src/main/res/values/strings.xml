@@ -6,4 +6,5 @@
     <string name="var_hint">Please input value for </string>
     <string name="btn_label">Evaluate Equation</string>
     <string name="clear">Clear</string>
+    <string name="title_activity_calc">CalcActivity</string>
 </resources>

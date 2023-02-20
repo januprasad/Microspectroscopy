@@ -1,8 +1,11 @@
 package com.github.microspectroscopy
 
 fun main() {
-    test1()
-    test2()
+//    test1()
+//    test2()
+    var x = 1L
+    var y = x.inc()
+    println(y)
 }
 
 fun test1() {

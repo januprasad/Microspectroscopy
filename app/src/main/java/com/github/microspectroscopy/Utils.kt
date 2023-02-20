@@ -1,5 +1,10 @@
 package com.github.microspectroscopy
 
+import androidx.compose.ui.text.toLowerCase
+import androidx.compose.ui.text.toUpperCase
+import androidx.core.text.isDigitsOnly
+import java.util.Locale
+
 fun String.atLeastOneAlpha(): Boolean {
     return this.matches(Regex(".*[a-zA-Z]+.*"))
 }
@@ -23,7 +28,7 @@ val predefined = listOf(
 )
 
 fun extractVariables(string: String): CharArray {
-    return clearPredefined(string)
+    return clearPredefined(string.lowercase(Locale.ENGLISH))
         .replace("[^A-Za-z]+".toRegex(), "")
         .toCharArray()
 }
@@ -40,4 +45,12 @@ fun clearPredefined(string: String): String {
         result = result.replace(element, "")
     }
     return result
+}
+
+fun isUsernameValid(username: String): Boolean {
+    return username.isNotBlank()
+}
+
+fun isNumber(username: String): Boolean {
+    return isUsernameValid(username) && username.isDigitsOnly()
 }

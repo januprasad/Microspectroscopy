@@ -20,7 +20,11 @@ class MainVM : ViewModel() {
                     content = newTextBox.content
                 )
             }
+            is AppEvent.Validate -> {
+                validate(event.expression) {
 
+                }
+            }
             is AppEvent.Evaluate -> {
                 evaluate(
                     event.expression,
@@ -33,8 +37,17 @@ class MainVM : ViewModel() {
         }
     }
 
+    private fun validate(expression: String, function: () -> Unit) {
+        val tokens =
+            expression.replace("\\s+".toRegex(), "").split("(?<=[-+*/()])|(?=[-+*/()])".toRegex())
+                .dropLastWhile { it.isEmpty() }
+                .toTypedArray()
+
+    }
+
     val textBoxPropsState = mutableStateOf(
         TextBoxProps(
+            contentValue = "",
             content = CharArray(0),
             numbers = CharArray(0),
             variables = CharArray(0),
@@ -51,8 +64,10 @@ class MainVM : ViewModel() {
             } else {
                 result(calc.compute().toString())
             }
-        } catch (e: ArithmeticException) {
-            result(e.localizedMessage)
+        } catch (ex1: ArithmeticException) {
+            result(ex1.localizedMessage)
+        } catch (ex2: IllegalArgumentException){
+            result(ex2.localizedMessage)
         }
     }
 }
@@ -63,6 +78,7 @@ data class Variable(
 )
 
 data class TextBoxProps(
+    val contentValue: String,
     val content: CharArray,
     val numbers: CharArray,
     val variables: CharArray,
@@ -73,4 +89,5 @@ data class TextBoxProps(
 sealed class AppEvent {
     data class NewTextBox(val newTextBox: TextBoxProps) : AppEvent()
     data class Evaluate(val expression: String, val variables: MutableMap<Char, Double>) : AppEvent()
+    data class Validate(val expression: String) : AppEvent()
 }
