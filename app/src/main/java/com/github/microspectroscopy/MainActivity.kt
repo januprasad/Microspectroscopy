@@ -51,19 +51,19 @@ class MainActivity : ComponentActivity() {
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colors.background
+                    color = MaterialTheme.colors.background,
                 ) {
                     val viewModel: MainVM = viewModel()
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth().padding(16.dp)
+                            .fillMaxWidth().padding(16.dp),
                     ) {
                         View(
                             viewModel.textBoxPropsState.value,
                             viewModel.resultState.value,
                             update = {
                                 viewModel.eventsHandler(it)
-                            }
+                            },
                         )
                     }
                 }
@@ -71,6 +71,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 @Composable
 fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> Unit) {
     var equation by remember { mutableStateOf(TextFieldValue("")) }
@@ -78,8 +79,8 @@ fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> 
         mutableStateListOf(
             Variable(
                 name = "",
-                value = TextFieldValue()
-            )
+                value = TextFieldValue(),
+            ),
         )
     }
     val isValidNumber by remember {
@@ -124,7 +125,7 @@ fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> 
             variableNames.forEachIndexed { index, item ->
                 val variable = Variable(
                     name = item.toString(),
-                    value = TextFieldValue("")
+                    value = TextFieldValue(""),
                 )
                 variableValues.add(variable)
             }
@@ -135,7 +136,7 @@ fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> 
         equation,
         updateEquation = {
             equation = it
-        }
+        },
     )
     if (isValidEquation) {
         Column {
@@ -149,14 +150,14 @@ fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> 
                             text = buildString {
                                 append(stringResource(R.string.var_hint).plus(" "))
                                 append(variableValues[index].name)
-                            }
+                            },
                         )
                     },
                     onValueChange = {
                         variableValues[index] = variableValues[index].copy(
-                            value = it
+                            value = it,
                         )
-                    }
+                    },
                 )
             }
         }
@@ -170,7 +171,9 @@ fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> 
                 try {
                     if (it.name.isNotBlank() && it.value.text.isNotBlank()) {
                         it.name[0] to it.value.text.toDouble()
-                    } else it.name[0] to 0.toDouble()
+                    } else {
+                        it.name[0] to 0.toDouble()
+                    }
                 } catch (ex: NumberFormatException) {
                     ex.printStackTrace()
                     it.name[0] to 0.toDouble()
@@ -179,13 +182,13 @@ fun View(textBoxPropsState: TextBoxProps, result: String, update: (AppEvent) -> 
             update(
                 AppEvent.Evaluate(
                     expression = equation.text,
-                    variables = variables
-                )
+                    variables = variables,
+                ),
             )
         },
         {
             equation = TextFieldValue("")
-        }
+        },
     )
 }
 
@@ -199,10 +202,10 @@ fun EquationTextField(equation: TextFieldValue, updateEquation: (TextFieldValue)
         singleLine = true,
         onValueChange = updateEquation,
         textStyle = TextStyle(
-            fontSize = 30.sp
+            fontSize = 30.sp,
         ),
         label = { Text(text = stringResource(R.string.eqn_label)) },
-        placeholder = { Text(text = stringResource(R.string.eqn_place_holder)) }
+        placeholder = { Text(text = stringResource(R.string.eqn_place_holder)) },
     )
 }
 
@@ -212,7 +215,7 @@ fun EvaluateButton(
     isValidNumber: Boolean,
     result: String,
     onEvaluate: () -> Unit,
-    onClearVars: () -> Unit
+    onClearVars: () -> Unit,
 ) {
     var isButtonVisible by remember { mutableStateOf(false) }
     if (isValidNumber) {
@@ -228,7 +231,7 @@ fun EvaluateButton(
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Button(
             enabled = isValidEquation,
@@ -237,14 +240,14 @@ fun EvaluateButton(
                     isButtonVisible = true
                 }
                 onEvaluate()
-            }
+            },
         ) {
             Text(stringResource(R.string.btn_label))
         }
         Button(
             onClick = {
                 onClearVars()
-            }
+            },
         ) {
             Text(stringResource(R.string.clear))
         }
@@ -252,12 +255,12 @@ fun EvaluateButton(
     AnimatedVisibility(
         visible = isButtonVisible,
         enter = fadeIn(animationSpec = tween(1000)),
-        exit = fadeOut(animationSpec = tween(1000))
+        exit = fadeOut(animationSpec = tween(1000)),
     ) {
         Text(
             text = result,
             fontSize = 30.sp,
-            fontFamily = FontFamily.Serif
+            fontFamily = FontFamily.Serif,
         )
     }
 }
